@@ -1,0 +1,20 @@
+.RedButton, .YellowButton, .GreenButton{
+    width: 15px;
+    height: 15px;
+
+    border-radius: 50%;
+}
+
+.RedButton{
+    background-color: rgba(255, 0, 0, 0.89);
+}
+.YellowButton{
+    background-color: rgb(255, 255, 6);
+}
+.GreenButton{
+    background-color: rgb(15, 255, 15);
+}
+
+.GreenButton:hover,.YellowButton:hover,.RedButton:hover{
+    cursor: pointer;
+}
