@@ -5,6 +5,8 @@ Description:
 This script will handle logging and delogging of user_prefs.key file possibly using encryption and decryption to
 further secure the key file from getting modified
 
+will store whether if user have downloaded certain files onto their file systems
+
 Error Handling: 
 If an error is raised while reading the file, we would assume that something has gone wrong, and we would 
 delete everything inside the data folder, (a function to be implemented)
@@ -12,15 +14,12 @@ delete everything inside the data folder, (a function to be implemented)
 
 /*#region Preparation */
 
-use std::default;
 /*#region importing necessities*/
 /*#region importing necessary libraries */
 use std::fs;
 use std::path::PathBuf;
-use std::path::Path;
 
 use serde::{Deserialize, Serialize};
-use serde_json::Error;
 use serde_json::Result;
 
 use std::sync::RwLock;
@@ -47,7 +46,12 @@ fn keyfile_pathbuf() -> PathBuf{
 
 lazy_static!{
     static ref USER_PREFERENCE_DATA: RwLock<UserPreferences> = RwLock::new( UserPreferences{
-        data_version: Some("0.0.0".into())
+        data_version: Some("0.0.0".into()),
+
+        /*classes_file_name : None,
+        chapters_file_name: None,
+        file_type_file_name: None,
+        files_file_name: None*/
     }
     );
 }  
@@ -60,8 +64,6 @@ lazy_static!{
     pub fn is_first_launch() -> bool{
         //Function to check if this is the first launch of this application
         //First we will check if the vizuara folder exists or not
-
-        let mut is_firstlaunch: bool = false;
 
         if file_manager::does_vizuara_folder_exist() {
             if file_manager::does_user_preferences_keyfile_exist(){
@@ -138,7 +140,14 @@ lazy_static!{
 #[derive(Serialize, Deserialize)]
 pub struct UserPreferences {
                                     //<- Version of the application, determines whether the application needs to be updated or not
-    data_version: Option<String>    //<- Data Version of the application, determines whether the application needs to update by downloading data within application
+    data_version: Option<String>,   //<- Data Version of the application, determines whether the application needs to update by downloading data within application
+    
+    /*
+    classes_file_name: Option<String>,
+    chapters_file_name: Option<String>,
+    file_type_file_name: Option<String>,
+    files_file_name:Option<String>
+    */
 }
 
 /*#endregion */

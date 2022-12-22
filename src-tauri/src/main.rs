@@ -22,6 +22,7 @@ mod file_manager;
 mod connection_manager;
 mod const_values;
 mod dialog_displayer;
+mod data_structure_manager;
 // the payload type must implement `Serialize` and `Clone`.
 #[derive(Clone, serde::Serialize)]
 struct Payload {
@@ -102,8 +103,8 @@ async fn initialize_application(window: tauri::Window) -> (){
   /*#endregion */
 
   /*#region Local Functions */
-  fn check_if_equal(value1: String, value2: String) -> bool{
-    value1 == value2
+  fn requires_update(value1: String, value2: String) -> bool{
+    value1 != value2
   }
 
   async fn ExitAfter10Seconds(win: tauri::Window, message_content: String){
@@ -142,7 +143,7 @@ async fn initialize_application(window: tauri::Window) -> (){
     let server_app_version: String = server_app_version_state.ok().unwrap();
 
     /*#region Application is Outdated */
-    if !check_if_equal(app_version, server_app_version) {
+    if requires_update(app_version, server_app_version) {
 
       /*#region Application is outdated! Ask user to update! */
       //Quit the application
@@ -155,6 +156,55 @@ async fn initialize_application(window: tauri::Window) -> (){
     /*#region Application is updated! Contine with the process of checking*/
     else{
        
+      let server_data_version_state = connection_manager::check_data_version_and_connection_state().await;
+
+      if server_data_version_state.is_ok(){
+        let data_version: String = user_preference_manager::get_data_version().unwrap();
+        let server_data_version: String = server_data_version_state.ok().unwrap();
+
+        /*#region require in app update */
+        if requires_update(data_version, server_data_version) {
+          //need to download the data structure files
+          //we will either create or overwrite the existing data struct file
+
+          if !file_manager::does_data_struct_keyfile_exists() {
+            //
+            if is_first_launch {
+              //First time user, allow them to download the data struct key file from the server
+              //println!("Trying to save data struct");
+              if !data_structure_manager::save_data_struct_from_server().await.is_ok(){
+                ExitAfter10Seconds(window.to_owned(), 
+                Event_Messages.UNEXPECTED_ERROR_SAVING_DATA_STRUCT_FAILED().into()).await;
+              }else{
+                //data_struct file has been successfully downloaded onto the user's machine! Good job!
+                //Now we will prepare to launch the application!
+
+                //STEPS TO TAKE
+                //1. READ THE STRUCT FILE
+                //2. LOAD ALL THE NECESSARY DATA ONTO A GLOBAL VECTOR
+                //3. DO ALL THE OPERATION NECESSARY WITH THE VECTOR
+              }
+            }else{
+
+              //not first launch but does not have the struct key file
+              //Something has happened which shouldn't have happened
+              //delete the entire folder
+              //and quit the application
+              file_manager::delete_vizuara_directory_and_recreate();
+
+              ExitAfter10Seconds(window.to_owned(), 
+              Event_Messages.UNEXPECTED_ERROR_CORRUPTED_DATA_STRUCT_KEY().into()).await;
+            }
+          }
+        }/*#endregion */
+        
+        /*region require no updates */
+        else{
+          //Just Launch the application
+          prepare_to_launch().await;
+        }
+        /*#endregion */
+      }
     }
     /*#endregion */
 
@@ -195,6 +245,10 @@ async fn initialize_application(window: tauri::Window) -> (){
   }
   /*#endregion */
  
+}
+
+async fn prepare_to_launch() -> (){
+  
 }
 /*#endregion */
 

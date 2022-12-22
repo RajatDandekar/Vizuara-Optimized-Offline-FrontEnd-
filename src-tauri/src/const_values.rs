@@ -1,6 +1,22 @@
-use dialog::Message;
+/*Author: Htet Aung Hlaing
+Modified Data: 22th Dec, 2022
+<summary>
+Description: 
+This script will handle the consts value that would be used inside main.rs
 
-pub const APPLICATION_VERSION: &str = "0.0.1";
+Error Handling: 
+None
+</summary>*/
+
+/*
+    <summary>
+        Error Codes
+        550 -> Corrupted Data Struct Key
+        549 -> Could not save data struct
+    </summary>
+*/
+
+pub const APPLICATION_VERSION: &str = r#"0.0.1"#;
 
 pub struct Event_Constants;
 impl Event_Constants{
@@ -45,5 +61,13 @@ impl Event_Messages{
 
     pub const fn UPDATE_APPLICATION(&self) -> &str{
         "An Update is available! Please update the application!"
+    }
+
+    pub const fn UNEXPECTED_ERROR_CORRUPTED_DATA_STRUCT_KEY(&self) -> &str{
+        "Exception:550. DELETING ALL DATA TO ENSURE DATA INTEGRITY"
+    }
+
+    pub const fn UNEXPECTED_ERROR_SAVING_DATA_STRUCT_FAILED(&self) -> &str{
+        "Exception:549. DELETING ALL DATA TO ENSURE DATA INTEGRITY"
     }
 }

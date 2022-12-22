@@ -16,20 +16,19 @@ inside the data folder, (a function to be implemented)
 /*#region Preparation */
 
 /*#region importing necessary libraries*/
-use std::option;
 use std::path::PathBuf;
 use std::path::Path;
 use std::fs;
 
-use magic_crypt::MagicCrypt256;
 use magic_crypt::MagicCryptTrait;
 /*#endregion*/
 
 /*#region defining constants */
 const VIZUARA_CRYPTO_KEY: &str = "vizuara_encryption_key_cQpUL0F4nvvkjz3irzFy";
 
-const VIZUARA_FOLDER_NAME: &str = "VizData";
-const KEY_FILE_NAME: &str = "user_prefs.key";
+const VIZUARA_FOLDER_NAME: &str = "VizData";        //<- The parent folder that will hold all the data for this application
+const KEY_FILE_NAME: &str = "user_prefs.key";       //<- This file will contain all the data related to this user
+const DATA_STRUCT_NAME: &str = "data_struct.key";   //<- This file will contain almost all of structure related data, url links, and all that
 /*#endregion */
 
 /*#endregion */
@@ -76,6 +75,24 @@ pub fn does_user_preferences_keyfile_exist() -> bool{
     check_if_path_exists(get_user_preferences_keyfile_path())
 }
 
+/*<summary>
+//This function will allow you to get data_struct key path
+//</summary>
+*/
+pub fn get_data_struct_keyfile_path() -> PathBuf{
+    let vizuara_path: PathBuf = get_vizuara_data_path();
+    let struct_file_path = Path::new(&vizuara_path).join(&DATA_STRUCT_NAME);
+    PathBuf::from(struct_file_path)
+}
+
+/*
+//<summary>
+//Check if the vizuara folder exists or not
+//</summary>
+// */
+pub fn does_data_struct_keyfile_exists() -> bool{
+    check_if_path_exists(get_data_struct_keyfile_path())
+}
 /*#endregion FilePathGetter*/
 
 /*#region Get File, Check if Exists, Create Folder, Create File, Append etc */
