@@ -2,6 +2,8 @@
     all(not(debug_assertions), target_os = "windows"),
     windows_subsystem = "windows"
 )]
+#[macro_use] 
+extern crate magic_crypt;
 
 /*#region importing necessities */
 use std::process;
@@ -10,19 +12,23 @@ use tauri::window::Window;
 use tauri::Manager;
 use std::path::PathBuf;
 use zip_extensions::*;
+
+use const_values::Event_Constants;
+use const_values::Event_Messages;
 /*#endregion */
 
 mod user_preference_manager;
 mod file_manager;
 mod connection_manager;
-
+mod const_values;
+mod dialog_displayer;
 // the payload type must implement `Serialize` and `Clone`.
 #[derive(Clone, serde::Serialize)]
 struct Payload {
   message: String,
 }
 
-
+/*#region common commands */
 #[tauri::command]
 fn quitapplication(window: tauri::Window) {
     window.app_handle().exit(0x0100);
@@ -40,13 +46,28 @@ async fn resizewindow(window: tauri::Window) {
 fn minimizewindow(window: tauri::Window) {
     window.minimize().unwrap();
 }
+
 #[tauri::command]
 fn visitwebsite(window: tauri::Window, url_to_open: String) {
   if webbrowser::open(&*url_to_open).is_ok() {
     // ...
   }
 }
+/*#endregion */
 
+/*#region custom functions */
+fn emit_event(target_window: tauri::Window, event_name: &str,message_to_deliver: String){
+  target_window.emit(event_name, Payload { message: message_to_deliver}).unwrap();
+}
+
+async fn sleep_for_a_second(){
+  std::thread::sleep(std::time::Duration::from_secs(1));
+}
+
+async fn sleep_for_two_seconds(){
+  std::thread::sleep(std::time::Duration::from_secs(2));
+}
+/*#endregion */
 #[tauri::command]
 fn extractcustom(window: tauri::Window, archive_file_path: String, destination_file_path: String) {
 
@@ -59,53 +80,123 @@ fn extractcustom(window: tauri::Window, archive_file_path: String, destination_f
 }
 
 
+/*#region preparation */
 #[tauri::command]
 fn loadingscreenloaded(window: tauri::Window) {
   tauri::async_runtime::spawn(async move {
-    window.emit("LoadingDescription", Payload { message: "Tauri is awesome!".into() }).unwrap();
+    emit_event(window.to_owned(), &Event_Constants.GET_LOADING_DESCRIPTION_EVENT(), Event_Messages.VIZUARA_INITIALIZING().into());
+    //window.emit(&const_values::Event_Constants.GET_LOADING_DESCRIPTION_EVENT(), Payload { message: "Tauri is awesome!".into() }).unwrap();
     println!("{}",file_manager::get_vizuara_data_path().display());
     initialize_application(window).await;
   });
 }
 
 async fn initialize_application(window: tauri::Window) -> (){
-/*
-//<summary>
-//The function that will prepare the application for further operation
-//</summary>
-// */
 
-  let is_first_launch: bool = user_preference_manager::is_first_launch();
+  /*#region Function Summary */
+  /*
+    <summary>
+    this function initializes the application and prepare for usage within the application
+    </summary>
+  */
+  /*#endregion */
 
-  /*#region display and welcome the user */
-  if is_first_launch {
-    window.emit("LoadingDescription", Payload { message: "Welcome to Vizuara: Teacher's Portal!".into() }).unwrap();
-
-  }else{
-    window.emit("LoadingDescription", Payload { message: "Welcome back to Vizuara: Teacher's Portal!".into() }).unwrap();
-    println!("{}",user_preference_manager::get_application_version());
+  /*#region Local Functions */
+  fn check_if_equal(value1: String, value2: String) -> bool{
+    value1 == value2
   }
-  std::thread::sleep(std::time::Duration::from_secs(2));
 
-  if connection_manager::check_connection(){
-    println!("Has Connection");
-    /*<summary>
-    //communicate with the server and check if the current version is up-to-date or not
-    //check version first -> if version matched -> launch main application anyways
-    //if !match -> update the application by downloading necessary files, version will be stored inside user preference manager
-    //
-    // */
-  }else{
-    println!("Does not have connection");
-    /*<summary>
-    //does not have any connection
-    //if first launch -> we will force user to reconnect again
-    //if no -> launch main application anyways
-    //</summary>
-    // */
+  async fn ExitAfter10Seconds(win: tauri::Window, message_content: String){
+    for number in (1..10).rev() {
+      emit_event(win.to_owned(), &Event_Constants.GET_LOADING_DESCRIPTION_EVENT(), const_values::Event_Messages.CLOSING_IN_WITH_MESSAGES(message_content.to_owned(), number).to_string());
+      sleep_for_a_second().await;
+    }
+    quitapplication(win);
   }
   /*#endregion */
+
+  //Rewriting the version text in the frontend
+  emit_event(window.to_owned(), &Event_Constants.GET_APPLICATION_VERSION_EVENT(), const_values::APPLICATION_VERSION.into());
+
+  //the variable that controls whether we should force the user to update their application by redirecting to the website
+  let server_app_version_state = connection_manager::check_application_version_and_connection_state().await;
+  //variable that detects whether it is the user's first time launching the application
+  let is_first_launch: bool = user_preference_manager::is_first_launch();
+
+  /*#region if connection is available */
+  if server_app_version_state.is_ok(){
+
+    /*#region set initial text */
+    if is_first_launch {
+      emit_event(window.to_owned(), &Event_Constants.GET_LOADING_DESCRIPTION_EVENT(), Event_Messages.WELCOME().into());
+    }else{
+      emit_event(window.to_owned(), &Event_Constants.GET_LOADING_DESCRIPTION_EVENT(), Event_Messages.WELCOME_BACK().into());
+      //std::thread::sleep(std::time::Duration::from_secs(2));
+      //window.emit("LoadingDescription", Payload { message: ["v", &server_app_version_state.unwrap()[..]].join("") }).unwrap();
+    }
+    /*#endregion */
+
+    sleep_for_two_seconds().await;
+
+    let app_version: String = const_values::APPLICATION_VERSION.into();
+    let server_app_version: String = server_app_version_state.ok().unwrap();
+
+    /*#region Application is Outdated */
+    if !check_if_equal(app_version, server_app_version) {
+
+      /*#region Application is outdated! Ask user to update! */
+      //Quit the application
+      ExitAfter10Seconds(window.to_owned(), 
+      Event_Messages.UPDATE_APPLICATION().into()).await;
+      /*#endregion */
+
+    }/*#endregion */
+    
+    /*#region Application is updated! Contine with the process of checking*/
+    else{
+       
+    }
+    /*#endregion */
+
+  }
+  /*#endregion */
+
+  /*#region if connection is not available */
+  else{
+    if is_first_launch {
+
+      /*#region Do NOT EVEN bother to launch the application */
+      //Force the user to quit
+       emit_event(window.to_owned(), 
+                  &Event_Constants.GET_LOADING_DESCRIPTION_EVENT(), 
+                  Event_Messages.WELCOME().into());
+
+      std::thread::sleep(std::time::Duration::from_secs(2));
+
+      ExitAfter10Seconds(window.to_owned(), 
+                        Event_Messages.FIRST_LAUNCH_CLOSING_MESSAGE().into()).await;
+    /*#endregion */
+      
+    }else{
+
+      /*#region Launch Application in offline mode */
+      //Launch Application in offline mode since connection is not available and data seem to be valid
+      emit_event(window.to_owned(), 
+      &Event_Constants.GET_LOADING_DESCRIPTION_EVENT(), 
+      Event_Messages.WELCOME_BACK().into());
+      
+      std::thread::sleep(std::time::Duration::from_secs(2));
+
+      emit_event(window.to_owned(), 
+      &Event_Constants.GET_LOADING_DESCRIPTION_EVENT(), 
+      Event_Messages.ONLINE_MODE_NOT_AVAILABLE_ENTERING_OFFLINE_MODE().into());
+      /*#endregion */
+    }
+  }
+  /*#endregion */
+ 
 }
+/*#endregion */
 
 fn main() {
     tauri::Builder::default().setup(|app|{

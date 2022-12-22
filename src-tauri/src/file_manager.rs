@@ -1,3 +1,4 @@
+extern crate dirs;
 /*Author: Htet Aung Hlaing
 Creation Date: 20th Dec, 2022
 Modified Date: 20th Dec, 2022
@@ -19,10 +20,14 @@ use std::option;
 use std::path::PathBuf;
 use std::path::Path;
 use std::fs;
-extern crate dirs;
+
+use magic_crypt::MagicCrypt256;
+use magic_crypt::MagicCryptTrait;
 /*#endregion*/
 
 /*#region defining constants */
+const VIZUARA_CRYPTO_KEY: &str = "vizuara_encryption_key_cQpUL0F4nvvkjz3irzFy";
+
 const VIZUARA_FOLDER_NAME: &str = "VizData";
 const KEY_FILE_NAME: &str = "user_prefs.key";
 /*#endregion */
@@ -98,10 +103,65 @@ pub fn create_file(file_pathbuf: PathBuf, content: String){
     }
 }
 
+pub fn create_file_with_encryption(file_pathbuf: PathBuf, content: String){
+    //content will be encrypted using some kind of encryption method before saving
+    let cryptographic_instance = new_magic_crypt!(VIZUARA_CRYPTO_KEY, 64);
+    create_file(file_pathbuf, cryptographic_instance.encrypt_str_to_base64(content))
+}
+
 pub fn read_file(file_pathbuf: PathBuf) -> String{
     let file_path: &Path = Path::new(&file_pathbuf);
     fs::read_to_string(file_path).unwrap()
 }
+
+pub fn read_file_with_decryption(file_pathbuf: PathBuf) -> Result<String, String>{
+
+    let original_content: String = read_file(file_pathbuf);
+
+    let cryptographic_instance = new_magic_crypt!(VIZUARA_CRYPTO_KEY, 64);
+    let decryption_result = cryptographic_instance.decrypt_base64_to_string(&original_content);
+    if decryption_result.is_ok() {
+        //decryption is okay
+        println!("Encrypted String {}", original_content);
+        println!("Decrypted String {}", decryption_result.as_ref().unwrap());
+        Ok(decryption_result.unwrap())
+    }else{
+        Err("Failed to read data".into())
+        //decryption is not okay
+    }
+}
+
+/*#region directory deletion */
+//delete files in the directory
+pub fn delete_folder(directory_pathbuf:PathBuf) -> Result<(),()>{
+    let directory_path: &Path = Path::new(&directory_pathbuf);
+    println!("{}", directory_path.display());
+
+    let remove_dir_result = fs::remove_dir_all(directory_path);
+    if remove_dir_result.is_ok(){
+        println!("directory deleted successfully!");
+        Ok(())
+    }else{
+        println!("Error: cannot delete directory -> {}", remove_dir_result.err().unwrap());
+        Err(())
+    }
+}
+
+pub fn delete_folder_and_recreate(directory_pathbuf: PathBuf) -> Result<(),()>{
+    if delete_folder(directory_pathbuf.to_path_buf()).is_ok() {
+        create_directory(directory_pathbuf);
+        Ok(())
+    }else{
+        Err(())
+    }
+}
+
+pub fn delete_vizuara_directory_and_recreate() -> Result<(),()>{
+    delete_folder_and_recreate(get_vizuara_data_path())
+}
+
+/*#endregion */
+
 /*#endregion */
 
 /*#endregion */

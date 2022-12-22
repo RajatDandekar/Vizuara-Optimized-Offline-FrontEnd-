@@ -48,6 +48,10 @@
         "startDragging": true,
         "unmaximize": true,
         "unminimize": true
+      },
+      "dialog": {
+        "all": false,
+        "message": false
       }
     },
     "bundle": {

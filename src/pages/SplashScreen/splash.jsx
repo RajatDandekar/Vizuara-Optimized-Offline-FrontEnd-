@@ -22,6 +22,7 @@ const hasWindow = typeof window !== 'undefined'
  function App() {
 
   const [LoadingDescription, setLoadingText] = useState("");
+  const [ApplicationVersion, setApplicationVersionText] = useState("");
 
   /*#region Event Listening Testing*/
 
@@ -29,13 +30,18 @@ const hasWindow = typeof window !== 'undefined'
   // your code
 
   console.log("Actually running");
-  const unlisten = listen("LoadingDescription", event =>{
+  const unlisten_loading_desc = listen("LoadingDescription", event =>{
       //console.log(event.payload.message);
       setLoadingText(event.payload.message);
   })
 
+  const unlisten_version_desc = listen("ApplicationVersion", event =>{
+    //console.log(event.payload.message);
+      setApplicationVersionText(event.payload.message);
+  })
+
   const InitializationCompleted = listen("InitializationCompleted", event =>{
-      console.log("Loading Completed!");
+      //console.log("Loading Completed!");
       emit("InitializationCompleted")
   })
 }
@@ -48,19 +54,25 @@ async function LoadingScreenLoaded(){
   return (
     <div className={styles.SplashScreen} onLoad={LoadingScreenLoaded}>
     <div className={styles.SplashContainer}>
+
       <div className={styles.SplashTextContainer}>
-        <LoadingText LoadingDescription={LoadingDescription}/>
+        <Text text={LoadingDescription}/>
       </div>
+
+      <div className={styles.SplashVersionContainer}>
+        <Text text={ApplicationVersion}/>
+      </div>
+
       <Image src={gifFile} className={styles.Video}/>
     </div>
     </div>
   );
 }
 
-class LoadingText extends React.Component{
+class Text extends React.Component{
   render(){
     return(
-      <text className="LoadingText">{this.props.LoadingDescription}</text>
+      <text className={styles.LoadingText}>{this.props.text}</text>
     );
   }
 }

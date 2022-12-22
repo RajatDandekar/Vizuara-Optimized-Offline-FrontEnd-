@@ -20,6 +20,7 @@ use std::path::PathBuf;
 use std::path::Path;
 
 use serde::{Deserialize, Serialize};
+use serde_json::Error;
 use serde_json::Result;
 
 use std::sync::RwLock;
@@ -45,7 +46,10 @@ fn keyfile_pathbuf() -> PathBuf{
 
 
 lazy_static!{
-    static ref USER_PREFERENCE_DATA: RwLock<UserPreferences> = RwLock::new(UserPreferences{version:Some(String::from("0.0.0"))});
+    static ref USER_PREFERENCE_DATA: RwLock<UserPreferences> = RwLock::new( UserPreferences{
+        data_version: Some("0.0.0".into())
+    }
+    );
 }  
 
 /*#endregion */
@@ -57,49 +61,84 @@ lazy_static!{
         //Function to check if this is the first launch of this application
         //First we will check if the vizuara folder exists or not
 
-        let mut is_first_launch: bool = false;
+        let mut is_firstlaunch: bool = false;
 
         if file_manager::does_vizuara_folder_exist() {
             if file_manager::does_user_preferences_keyfile_exist(){
-                is_first_launch = false;
-                get_user_preference_data();
+                let get_user_preference_state = get_user_preference_data();
+                if get_user_preference_state.is_ok(){
+                    //which means data is likely to be correct
+                    let get_data_version_state = get_data_version();
+                    if get_data_version_state.is_ok(){
+                        false
+                    }else{
+
+                        println!("File Exists but data seems to have been corrupted as we cannot find app-version which is the most basic value of all! Consider deleting
+                        the data in the entire directory!");
+                        true
+                        //Some Error has occurred and value that should exist within the application does not exist anymore! All data inside the folder should be deleted
+                    }
+                }else{
+
+                    //User Preference Manager Key File seems to be corrupted! Delete it asap!
+                    file_manager::delete_vizuara_directory_and_recreate();
+                    true
+                }
             }else{
-                file_manager::create_file(keyfile_pathbuf(), serde_json::to_string(&*USER_PREFERENCE_DATA.read().unwrap()).unwrap());
-                is_first_launch =  true;
+                file_manager::create_file_with_encryption(keyfile_pathbuf(), serde_json::to_string(&*USER_PREFERENCE_DATA.read().unwrap()).unwrap());
+                true
             }
         }else{
             file_manager::create_directory(file_manager::get_vizuara_data_path());
-            file_manager::create_file(keyfile_pathbuf(), serde_json::to_string(&*USER_PREFERENCE_DATA.read().unwrap()).unwrap());
-            is_first_launch = true;
+            file_manager::create_file_with_encryption(keyfile_pathbuf(), serde_json::to_string(&*USER_PREFERENCE_DATA.read().unwrap()).unwrap());
+            true
         }
-
-        is_first_launch
     }
 
-    pub fn get_user_preference_data(){
-        
-        let mut global_user_preference_pointer = USER_PREFERENCE_DATA.write().unwrap();
+    //gotten user_preference_data successfully!
+    pub fn get_user_preference_data() -> std::result::Result<(),()>{
 
-        *global_user_preference_pointer = serde_json::from_str(&file_manager::read_file(keyfile_pathbuf())).unwrap();
+        println!("Getting User Preference Data");
+
+        let read_file_result : std::result::Result<String, String> = file_manager::read_file_with_decryption(keyfile_pathbuf());
+
+        if read_file_result.is_ok() {
+        let json_parsing_result : Result<UserPreferences> = serde_json::from_str(&read_file_result.unwrap());
+        
+        if json_parsing_result.is_ok() {
+            //executed successfully!
+            let mut global_user_preference_pointer = USER_PREFERENCE_DATA.write().unwrap();
+            *global_user_preference_pointer = json_parsing_result.unwrap();
+            Ok(())
+            }else{
+                Err(())
+            }
+        }else{
+            println!("{:?}", read_file_result.err().unwrap());
+            Err(())
+        }
         //let version_data: String = up.version.as_ref().unwrap().to_owned();
         //set_user_pref(Lazy::new(||UserPreferences{version:Some(String::from(version_data))}));
     }
 
-    pub fn get_application_version() -> String{
+    pub fn get_data_version() -> std::result::Result<String,()>{
         
         let up: &UserPreferences = &*USER_PREFERENCE_DATA.read().unwrap();
-        let version: String = up.version.as_ref().unwrap().to_owned();
-        println!("Application {}", version);
-
-
-        "0.0.0".into()
+        
+        let app_version: &Option<String> = &up.data_version;
+        if app_version.is_some(){
+            Ok(up.data_version.as_ref().unwrap().to_owned().into())
+        }else{
+            Err(())
+        }
     }
 /*#endregion */
 
 /*#region structs */
 #[derive(Serialize, Deserialize)]
 pub struct UserPreferences {
-    version: Option<String>,
+                                    //<- Version of the application, determines whether the application needs to be updated or not
+    data_version: Option<String>    //<- Data Version of the application, determines whether the application needs to update by downloading data within application
 }
 
 /*#endregion */
