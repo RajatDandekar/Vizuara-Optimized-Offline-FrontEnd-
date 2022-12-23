@@ -27,6 +27,10 @@ impl Event_Constants{
     pub const fn GET_APPLICATION_VERSION_EVENT(&self) -> &str{
         "ApplicationVersion"
     }
+
+    pub const fn GET_INITIALIZATION_COMPLETED(&self) -> &str{
+        "InitializationCompleted"
+    }
 }
 
 pub struct Event_Messages;
@@ -69,5 +73,9 @@ impl Event_Messages{
 
     pub const fn UNEXPECTED_ERROR_SAVING_DATA_STRUCT_FAILED(&self) -> &str{
         "Exception:549. DELETING ALL DATA TO ENSURE DATA INTEGRITY"
+    }
+
+    pub const fn LAUNCHING_APPLICATION(&self) -> &str{
+        "Launching Vizuara: Teacher's Portal"
     }
 }

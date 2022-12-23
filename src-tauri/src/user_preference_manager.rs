@@ -100,7 +100,7 @@ lazy_static!{
     //gotten user_preference_data successfully!
     pub fn get_user_preference_data() -> std::result::Result<(),()>{
 
-        println!("Getting User Preference Data");
+        //println!("Getting User Preference Data");
 
         let read_file_result : std::result::Result<String, String> = file_manager::read_file_with_decryption(keyfile_pathbuf());
 

@@ -6,12 +6,11 @@
 extern crate magic_crypt;
 
 /*#region importing necessities */
-use std::process;
-use tauri::WindowBuilder;
-use tauri::window::Window;
 use tauri::Manager;
 use std::path::PathBuf;
 use zip_extensions::*;
+use lazy_static::lazy_static;
+use std::sync::RwLock;
 
 use const_values::Event_Constants;
 use const_values::Event_Messages;
@@ -23,11 +22,32 @@ mod connection_manager;
 mod const_values;
 mod dialog_displayer;
 mod data_structure_manager;
+
+/*#region const variables */
 // the payload type must implement `Serialize` and `Clone`.
 #[derive(Clone, serde::Serialize)]
 struct Payload {
   message: String,
 }
+
+lazy_static!{
+
+  //this variable will control whether the in-app-application will be displayed in offline mode
+  //so if this variable true, for example, user wouldn't be able to download new cheapters, etc
+  static ref offline_mode: RwLock<bool> = RwLock::new( 
+      false
+  );
+}  
+
+fn set_offline_mode(is_offline_mode_local: bool){
+  let mut global_is_offline_mode = offline_mode.write().unwrap();
+  *global_is_offline_mode = is_offline_mode_local;
+}
+
+fn is_offline_mode() -> bool {
+  *offline_mode.read().unwrap()
+}
+/*#endregion */
 
 /*#region common commands */
 #[tauri::command]
@@ -69,6 +89,7 @@ async fn sleep_for_two_seconds(){
   std::thread::sleep(std::time::Duration::from_secs(2));
 }
 /*#endregion */
+
 #[tauri::command]
 fn extractcustom(window: tauri::Window, archive_file_path: String, destination_file_path: String) {
 
@@ -92,6 +113,14 @@ fn loadingscreenloaded(window: tauri::Window) {
   });
 }
 
+async fn exit_after_10_seconds(win: tauri::Window, message_content: String){
+  for number in (1..10).rev() {
+    emit_event(win.to_owned(), &Event_Constants.GET_LOADING_DESCRIPTION_EVENT(), const_values::Event_Messages.CLOSING_IN_WITH_MESSAGES(message_content.to_owned(), number).to_string());
+    sleep_for_a_second().await;
+  }
+  quitapplication(win);
+}
+
 async fn initialize_application(window: tauri::Window) -> (){
 
   /*#region Function Summary */
@@ -105,14 +134,6 @@ async fn initialize_application(window: tauri::Window) -> (){
   /*#region Local Functions */
   fn requires_update(value1: String, value2: String) -> bool{
     value1 != value2
-  }
-
-  async fn ExitAfter10Seconds(win: tauri::Window, message_content: String){
-    for number in (1..10).rev() {
-      emit_event(win.to_owned(), &Event_Constants.GET_LOADING_DESCRIPTION_EVENT(), const_values::Event_Messages.CLOSING_IN_WITH_MESSAGES(message_content.to_owned(), number).to_string());
-      sleep_for_a_second().await;
-    }
-    quitapplication(win);
   }
   /*#endregion */
 
@@ -147,7 +168,7 @@ async fn initialize_application(window: tauri::Window) -> (){
 
       /*#region Application is outdated! Ask user to update! */
       //Quit the application
-      ExitAfter10Seconds(window.to_owned(), 
+      exit_after_10_seconds(window.to_owned(), 
       Event_Messages.UPDATE_APPLICATION().into()).await;
       /*#endregion */
 
@@ -170,21 +191,11 @@ async fn initialize_application(window: tauri::Window) -> (){
           if !file_manager::does_data_struct_keyfile_exists() {
             //
             if is_first_launch {
-              //First time user, allow them to download the data struct key file from the server
-              //println!("Trying to save data struct");
-              if !data_structure_manager::save_data_struct_from_server().await.is_ok(){
-                ExitAfter10Seconds(window.to_owned(), 
-                Event_Messages.UNEXPECTED_ERROR_SAVING_DATA_STRUCT_FAILED().into()).await;
-              }else{
-                //data_struct file has been successfully downloaded onto the user's machine! Good job!
-                //Now we will prepare to launch the application!
-
-                //STEPS TO TAKE
-                //1. READ THE STRUCT FILE
-                //2. LOAD ALL THE NECESSARY DATA ONTO A GLOBAL VECTOR
-                //3. DO ALL THE OPERATION NECESSARY WITH THE VECTOR
-              }
-            }else{
+              update_and_start(window.to_owned()).await;
+            }
+            
+            /*#region data struct file does not exist when it should exist */
+            else{
 
               //not first launch but does not have the struct key file
               //Something has happened which shouldn't have happened
@@ -192,16 +203,22 @@ async fn initialize_application(window: tauri::Window) -> (){
               //and quit the application
               file_manager::delete_vizuara_directory_and_recreate();
 
-              ExitAfter10Seconds(window.to_owned(), 
+              exit_after_10_seconds(window.to_owned(), 
               Event_Messages.UNEXPECTED_ERROR_CORRUPTED_DATA_STRUCT_KEY().into()).await;
             }
+            /*#endregion */
+
+          }
+          /*#region Just casually update the application */
+          else{
+            update_and_start(window.to_owned()).await;
           }
         }/*#endregion */
         
-        /*region require no updates */
+        /*#region require no updates */
         else{
           //Just Launch the application
-          prepare_to_launch().await;
+          prepare_to_launch(window).await;
         }
         /*#endregion */
       }
@@ -223,7 +240,7 @@ async fn initialize_application(window: tauri::Window) -> (){
 
       std::thread::sleep(std::time::Duration::from_secs(2));
 
-      ExitAfter10Seconds(window.to_owned(), 
+      exit_after_10_seconds(window.to_owned(), 
                         Event_Messages.FIRST_LAUNCH_CLOSING_MESSAGE().into()).await;
     /*#endregion */
       
@@ -235,11 +252,17 @@ async fn initialize_application(window: tauri::Window) -> (){
       &Event_Constants.GET_LOADING_DESCRIPTION_EVENT(), 
       Event_Messages.WELCOME_BACK().into());
       
-      std::thread::sleep(std::time::Duration::from_secs(2));
+      sleep_for_two_seconds().await;
 
       emit_event(window.to_owned(), 
       &Event_Constants.GET_LOADING_DESCRIPTION_EVENT(), 
       Event_Messages.ONLINE_MODE_NOT_AVAILABLE_ENTERING_OFFLINE_MODE().into());
+
+      sleep_for_two_seconds().await;
+
+      set_offline_mode(true);
+
+      prepare_to_launch(window);
       /*#endregion */
     }
   }
@@ -247,8 +270,63 @@ async fn initialize_application(window: tauri::Window) -> (){
  
 }
 
-async fn prepare_to_launch() -> (){
-  
+async fn update_and_start(window: tauri:: Window){
+
+  //First time user, allow them to download the data struct key file from the server
+  //println!("Trying to save data struct");
+  if !data_structure_manager::save_data_struct_from_server().await.is_ok(){
+
+    exit_after_10_seconds(window.to_owned(), 
+    Event_Messages.UNEXPECTED_ERROR_SAVING_DATA_STRUCT_FAILED().into()).await;
+
+  }else{              
+    prepare_to_launch(window).await;
+  }
+
+}
+
+async fn prepare_to_launch(window: tauri::Window) {
+
+        //data_struct file has been successfully downloaded onto the user's machine! Good job!
+        //Now we will prepare to launch the application!
+
+        //STEPS TO TAKE
+        //1. READ THE STRUCT FILE
+        //2. LOAD ALL THE NECESSARY DATA ONTO A GLOBAL VECTOR (PROBABLY OR NOT) ALTERNATIVELY, WILL JUST CONFIRM IF THE FILE IS NOT CORRUPTED
+        //3. DO ALL THE OPERATION NECESSARY WITH THE VECTOR
+
+        println!("Trying to check data struct integrity");
+        let data_struct_integrity_result: Result<(),()> = data_structure_manager::read_and_check_and_save_data_struct_file_integrity().await;
+                
+        /*#region data struct integrity exists! */
+        if data_struct_integrity_result.is_ok() {
+          emit_event(window.to_owned(), 
+          &Event_Constants.GET_LOADING_DESCRIPTION_EVENT(), 
+          Event_Messages.LAUNCHING_APPLICATION().into());
+
+          sleep_for_a_second().await;
+
+
+          emit_event(window.to_owned(), 
+          &Event_Constants.GET_INITIALIZATION_COMPLETED(), 
+          Event_Messages.LAUNCHING_APPLICATION().into());
+
+          //Launch the application!
+          //println!("Launch the application!")
+        }
+      /*#endregion */
+
+      /*#region data struct integrity lost */
+      else{
+        //corrupted! delete and exit and ask to restart!
+        file_manager::delete_vizuara_directory_and_recreate();
+
+        exit_after_10_seconds(window.to_owned(), 
+        Event_Messages.UNEXPECTED_ERROR_CORRUPTED_DATA_STRUCT_KEY().into()).await;
+
+        //GET_INITIALIZATION_COMPLETED
+      }
+    /*#endregion */
 }
 /*#endregion */
 
