@@ -8,9 +8,11 @@ extern crate magic_crypt;
 /*#region importing necessities */
 use tauri::Manager;
 use std::path::PathBuf;
+use std::vec;
 use zip_extensions::*;
 use lazy_static::lazy_static;
 use std::sync::RwLock;
+use serde_json::{Value};
 
 use const_values::Event_Constants;
 use const_values::Event_Messages;
@@ -101,6 +103,21 @@ fn extractcustom(window: tauri::Window, archive_file_path: String, destination_f
   println!("File is at {}, and destination is {}", archive_file_path, destination_file_path);
 }
 
+
+#[tauri::command]
+fn getclassesdata(window: tauri::Window) -> serde_json::Map<String, Value>{
+    let mut main_return_map = serde_json::Map::new();
+
+    let mut classes_vector: Vec<Value> = Vec::new();
+
+    let mut class_1_map = serde_json::Map::new();
+    class_1_map.insert("id".into(), Value::String("1".into()));
+    class_1_map.insert("value".into(), Value::String("test".into()));
+
+    classes_vector.push(Value::Object(class_1_map));
+    main_return_map.insert("classes".into(), Value::Array(classes_vector));
+    main_return_map
+}
 
 /*#region preparation */
 #[tauri::command]
@@ -355,7 +372,7 @@ fn main() {
       });
         Ok(())
         })
-        .invoke_handler(tauri::generate_handler![quitapplication, resizewindow, minimizewindow, visitwebsite, extractcustom, loadingscreenloaded])
+        .invoke_handler(tauri::generate_handler![quitapplication, resizewindow, minimizewindow, visitwebsite, extractcustom, loadingscreenloaded, getclassesdata])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
