@@ -20,13 +20,17 @@ function App() {
   const [archiveFilePath, setArchiveFilePath] = useState("");
   const [destinationFilePath, setDestinationFilePath] = useState("");
 
+  function SideBar_Vizuara(){
+    return new SideBar(Logo);
+  }
+
   async function SendExtractionData(){
     await invoke("extractcustom", {archiveFilePath, destinationFilePath});
   }
   return (
     <div className="MainContainer">
       <TitleBar Logo={Logo} Title="Vizuara: Teacher Portal"/>
-      <SideBar Logo={Logo}></SideBar>
+      <SideBar_Vizuara></SideBar_Vizuara>
       <div className="ContentContainer">
         You can test out the extract-functionality using this, enter the path of the file and destination directory below
         <br></br>

@@ -29,7 +29,7 @@ use std::sync::RwLock;
 use crate::file_manager;
 extern crate lazy_static;
 
-use lazy_static::lazy_static;
+use lazy_static::{lazy_static, __Deref};
 /*#endregion */
 
 /*#endregion */
@@ -87,12 +87,12 @@ lazy_static!{
                     true
                 }
             }else{
-                file_manager::create_file_with_encryption(keyfile_pathbuf(), serde_json::to_string(&*USER_PREFERENCE_DATA.read().unwrap()).unwrap());
+                //file_manager::create_file_with_encryption(keyfile_pathbuf(), serde_json::to_string(&*USER_PREFERENCE_DATA.read().unwrap()).unwrap());
                 true
             }
         }else{
             file_manager::create_directory(file_manager::get_vizuara_data_path());
-            file_manager::create_file_with_encryption(keyfile_pathbuf(), serde_json::to_string(&*USER_PREFERENCE_DATA.read().unwrap()).unwrap());
+            //file_manager::create_file_with_encryption(keyfile_pathbuf(), serde_json::to_string(&*USER_PREFERENCE_DATA.read().unwrap()).unwrap());
             true
         }
     }
@@ -133,6 +133,23 @@ lazy_static!{
         }else{
             Err(())
         }
+    }
+
+    pub fn set_new_data_version(new_data_version: String) -> std::result::Result<(),()>{
+        let mut global_user_preference_pointer = USER_PREFERENCE_DATA.write().unwrap();
+        (*global_user_preference_pointer).data_version = Some(new_data_version);
+        drop(global_user_preference_pointer);
+
+        save_from_variable_to_keyfile()
+    }
+
+    pub fn save_from_variable_to_keyfile() -> std::result::Result<(),()>{
+        //println!("Being Saved!");
+        //let upd_temp = &*USER_PREFERENCE_DATA.read().expect("something went wrong");
+        //println!("After getting");
+
+        file_manager::create_file_with_encryption(keyfile_pathbuf(), serde_json::to_string(&*USER_PREFERENCE_DATA.read().unwrap()).unwrap());
+        Ok(())
     }
 /*#endregion */
 

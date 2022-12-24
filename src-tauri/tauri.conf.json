@@ -52,6 +52,15 @@
       "dialog": {
         "all": false,
         "message": false
+      },
+      "fs":{
+        "all": true,
+        "scope": ["$LOCALDATA/VizData/*"]
+      },
+      "protocol": {
+        "all": false,
+        "asset": true,
+        "assetScope": ["$LOCALDATA/VizData/*"]
       }
     },
     "bundle": {
@@ -88,7 +97,7 @@
       }
     },
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; img-src 'self' asset: https://asset.localhost; media-src 'self' asset: https://asset.localhost"
     },
     "updater": {
       "active": false

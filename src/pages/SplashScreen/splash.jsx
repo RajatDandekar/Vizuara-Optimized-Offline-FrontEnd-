@@ -5,7 +5,7 @@
 import React from "react";
 
 import { invoke } from "@tauri-apps/api/tauri";
-import {listen, emit} from "@tauri-apps/api/event";
+import {listen, emit, once} from "@tauri-apps/api/event";
 
 import { useState } from "react";
 
@@ -17,6 +17,10 @@ import gifFile from "../../assets/images/VizuaraLoadingScreen.gif"
 import styles from "./splash.module.css";
 
 const hasWindow = typeof window !== 'undefined'
+
+class SplashDataContainer{
+  static splash_init_done = false;
+}
 
 /*#endregion*/
  function App() {
@@ -40,9 +44,12 @@ const hasWindow = typeof window !== 'undefined'
       setApplicationVersionText(event.payload.message);
   })
 
-  const InitializationCompleted = listen("InitializationCompleted", event =>{
+  const InitializationCompleted = once("InitializationCompleted", event =>{
       //console.log("Loading Completed!");
-      emit("InitializationCompleted")
+      if(!SplashDataContainer.splash_init_done){
+        emit("InitializationCompleted")
+        SplashDataContainer = true;
+      }
   })
 }
 

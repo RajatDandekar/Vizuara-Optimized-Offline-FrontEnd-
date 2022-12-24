@@ -105,18 +105,28 @@ fn extractcustom(window: tauri::Window, archive_file_path: String, destination_f
 
 
 #[tauri::command]
-fn getclassesdata(window: tauri::Window) -> serde_json::Map<String, Value>{
-    let mut main_return_map = serde_json::Map::new();
-
+fn getclassesdata(window: tauri::Window) -> Vec<Value>{
     let mut classes_vector: Vec<Value> = Vec::new();
 
+    println!("Get_Classes Function being called");
+    
+    let mut loop_counter = 1;
+    loop  {
+      let class_get_result = data_structure_manager::get_class_basic_data((&loop_counter).to_string());
+      if class_get_result.is_ok() {
+        classes_vector.push(Value::Object(class_get_result.ok().unwrap()));
+      }else{
+        break;
+      }
+      loop_counter+=1;
+    }
     let mut class_1_map = serde_json::Map::new();
     class_1_map.insert("id".into(), Value::String("1".into()));
     class_1_map.insert("value".into(), Value::String("test".into()));
 
     classes_vector.push(Value::Object(class_1_map));
-    main_return_map.insert("classes".into(), Value::Array(classes_vector));
-    main_return_map
+
+    classes_vector
 }
 
 /*#region preparation */
@@ -199,16 +209,17 @@ async fn initialize_application(window: tauri::Window) -> (){
       if server_data_version_state.is_ok(){
         let data_version: String = user_preference_manager::get_data_version().unwrap();
         let server_data_version: String = server_data_version_state.ok().unwrap();
+        println!("server-data-version-> {:?}", server_data_version);
 
         /*#region require in app update */
-        if requires_update(data_version, server_data_version) {
+        if requires_update(data_version, (&server_data_version).to_owned()) {
           //need to download the data structure files
           //we will either create or overwrite the existing data struct file
 
           if !file_manager::does_data_struct_keyfile_exists() {
             //
             if is_first_launch {
-              update_and_start(window.to_owned()).await;
+              update_and_start(window.to_owned(), server_data_version).await;
             }
             
             /*#region data struct file does not exist when it should exist */
@@ -228,7 +239,7 @@ async fn initialize_application(window: tauri::Window) -> (){
           }
           /*#region Just casually update the application */
           else{
-            update_and_start(window.to_owned()).await;
+            update_and_start(window.to_owned(), server_data_version).await;
           }
         }/*#endregion */
         
@@ -287,7 +298,7 @@ async fn initialize_application(window: tauri::Window) -> (){
  
 }
 
-async fn update_and_start(window: tauri:: Window){
+async fn update_and_start(window: tauri:: Window, server_data_version: String){
 
   //First time user, allow them to download the data struct key file from the server
   //println!("Trying to save data struct");
@@ -297,7 +308,13 @@ async fn update_and_start(window: tauri:: Window){
     Event_Messages.UNEXPECTED_ERROR_SAVING_DATA_STRUCT_FAILED().into()).await;
 
   }else{              
-    prepare_to_launch(window).await;
+
+    if user_preference_manager::set_new_data_version(server_data_version).is_ok() {
+      println!("Updating is not okay");
+      prepare_to_launch(window).await;
+    }else{
+      println!("Updating is not okay");
+    }
   }
 
 }
@@ -327,6 +344,8 @@ async fn prepare_to_launch(window: tauri::Window) {
           emit_event(window.to_owned(), 
           &Event_Constants.GET_INITIALIZATION_COMPLETED(), 
           Event_Messages.LAUNCHING_APPLICATION().into());
+
+          emit_event(window.app_handle().get_window("main").to_owned().unwrap(),&Event_Constants.GET_INITIALIZATION_COMPLETED(), "".into());
 
           //Launch the application!
           //println!("Launch the application!")
@@ -366,7 +385,7 @@ fn main() {
         //main_window.show().unwrap();
       });*/
 
-      let id = app.listen_global("InitializationCompleted", move |event| {
+      let _id = app.once_global("InitializationCompleted", move |event| {
         splashscreen_window.close().unwrap();
         main_window.show().unwrap();
       });

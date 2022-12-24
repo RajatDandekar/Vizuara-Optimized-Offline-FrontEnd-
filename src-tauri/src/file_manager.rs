@@ -29,6 +29,22 @@ const VIZUARA_CRYPTO_KEY: &str = "vizuara_encryption_key_cQpUL0F4nvvkjz3irzFy";
 const VIZUARA_FOLDER_NAME: &str = "VizData";        //<- The parent folder that will hold all the data for this application
 const KEY_FILE_NAME: &str = "user_prefs.key";       //<- This file will contain all the data related to this user
 const DATA_STRUCT_NAME: &str = "data_struct.key";   //<- This file will contain almost all of structure related data, url links, and all that
+
+/*#region thumbnails */
+const THUMBNAILS_FOLDER_NAME: &str = "thumbnails";
+
+    /*#region thumbnails for classes and chapters */
+        const CLASSES_THUMBNAILS_FOLDER_NAME: &str = "classes";
+        const CHAPTERS_THUMBNAILS_FOLDER_NAME: &str = "chapters";
+    /*#endregion */
+
+    /*#region thumbnails for each data type */
+    const LABORATORIES: &str = "lab";
+    const VIDEOS : &str = "vid";
+    /*#endregion */
+
+/*#endregion */
+
 /*#endregion */
 
 /*#endregion */
@@ -95,6 +111,65 @@ pub fn does_data_struct_keyfile_exists() -> bool{
 }
 /*#endregion FilePathGetter*/
 
+//<summary>
+//get thumbnails folder
+//</summary>
+pub fn get_thumbnails_folder() -> PathBuf{
+    let vizuara_path: PathBuf = get_vizuara_data_path();
+    let thumbnails_directory_path = Path::new(&vizuara_path).join(&THUMBNAILS_FOLDER_NAME);
+    PathBuf::from(thumbnails_directory_path)
+}
+
+//<summary>
+//check if the thumbnails folder exists
+//</summary>
+pub fn does_thumbnails_folder_exist() -> bool{
+    check_if_path_exists(get_thumbnails_folder())
+}
+
+//<summary>
+//get thumbnails folder of classes
+//</summary>
+pub fn get_classes_thumbnails_folder() -> PathBuf{
+    let thumbails_directory: PathBuf = get_thumbnails_folder();
+    let classes_thumbnails_directory_path = Path::new(&thumbails_directory).join(&CLASSES_THUMBNAILS_FOLDER_NAME);
+    PathBuf::from(classes_thumbnails_directory_path)
+}
+
+//<summary>
+//get thumbnail of chapters
+//</summary>
+pub fn get_class_thumbnail(thumbnail_id: String) -> PathBuf{
+    let classes_thumbnail_directory: PathBuf = get_classes_thumbnails_folder();
+
+    println!("file path is {:?}",&thumbnail_id);
+    let mut temp_thumbnail_id = (&thumbnail_id).to_owned();
+    temp_thumbnail_id.push_str(".jpg".into());
+    let str_thumbnail_id: &str = temp_thumbnail_id.as_str();
+    let new_path:String = str_thumbnail_id.replace("\"", "").replace("\\", "/");
+
+    let class_thumbail_path = Path::new(&classes_thumbnail_directory).join(new_path);
+    PathBuf::from(class_thumbail_path)
+}
+
+//<summary>
+//get chapters folder of classes
+//</summary>
+pub fn get_chapters_thumbnails_folder() -> PathBuf{
+    let thumbnails_directory: PathBuf = get_thumbnails_folder();
+    let chapters_thumbnails_directory_path = Path::new(&thumbnails_directory).join(&CHAPTERS_THUMBNAILS_FOLDER_NAME);
+    PathBuf::from(chapters_thumbnails_directory_path)
+}
+
+//<summary>
+//get thumbnail of chapters
+//</summary>
+pub fn get_chapter_thumbnail(thumbnail_id: String) -> PathBuf{
+    let chapter_thumbnails_directory: PathBuf = get_chapters_thumbnails_folder();
+    let chapter_thumbnail_path = Path::new(&chapter_thumbnails_directory).join(thumbnail_id + ".jpg");
+    PathBuf::from(chapter_thumbnail_path)
+}
+
 /*#region Get File, Check if Exists, Create Folder, Create File, Append etc */
 
 pub fn check_if_path_exists(path_buf: PathBuf) -> bool{
@@ -122,6 +197,7 @@ pub fn create_file(file_pathbuf: PathBuf, content: String){
 
 pub fn create_file_with_encryption(file_pathbuf: PathBuf, content: String){
     //content will be encrypted using some kind of encryption method before saving
+    println!("key file asking to be created!");
     let cryptographic_instance = new_magic_crypt!(VIZUARA_CRYPTO_KEY, 64);
     create_file(file_pathbuf, cryptographic_instance.encrypt_str_to_base64(content))
 }

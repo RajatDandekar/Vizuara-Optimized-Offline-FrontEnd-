@@ -19,7 +19,7 @@ use crate::connection_manager;
 use crate::file_manager;
 extern crate lazy_static;
 
-use serde_json::{Result, Value};
+use serde_json::{Result, Value, Map};
 use std::sync::RwLock;
 
 use lazy_static::lazy_static;
@@ -104,11 +104,55 @@ fn data_integrity_is_valid() -> bool{
     }
 }
 
-fn check_if_key_exists_in_data_struct(keyName: String) -> bool {
+fn check_if_key_exists_in_data_struct(key_name: String) -> bool {
     let data_struct_option: &Option<Value> = &*DATA_STRUCT_DATA.read().unwrap();
-    let data_struct = &data_struct_option.as_ref().unwrap();
+    let data_struct_option_result = &data_struct_option.as_ref();
 
-    data_struct.get(keyName).is_some()
+    if data_struct_option_result.is_some() {
+        let data_struct = data_struct_option_result.unwrap();
+        data_struct.get(key_name).is_some()
+    }else{
+        false
+    }
+}
+
+fn get_key(key_name: String) -> std::result::Result<Value,()>{
+    if check_if_key_exists_in_data_struct((&key_name).to_owned()) {
+
+        let data_struct_option: &Option<Value> = &*DATA_STRUCT_DATA.read().unwrap();
+        let data_struct_option_result = &data_struct_option.as_ref();
+
+        if data_struct_option_result.is_some() {
+            let data_struct = data_struct_option_result.unwrap();
+            Ok(data_struct.get(key_name).unwrap().to_owned())
+        }else{
+            Err(())
+        }
+    
+    }else{
+        Err(())
+    }
+}
+
+pub fn get_class_basic_data(class_id: String) -> std::result::Result<Map<String, Value>,()> {
+    //println!("Trying to get class key");
+    let get_key_result = get_key(class_id);
+    if get_key_result.is_ok() {
+        let classes = get_key_result.ok().unwrap();
+        println!("{:?}", classes);
+        let mut classes_basic_data = Map::new();
+
+        let class_id = classes.get("I").unwrap().to_owned();
+
+        classes_basic_data.insert("id".into(), (&class_id).to_owned());
+        classes_basic_data.insert("name".into(), classes.get("N").unwrap().to_owned());
+        classes_basic_data.insert("thumbnailpath".into(), Value::String(file_manager::get_class_thumbnail(class_id.to_string()).into_os_string().into_string().unwrap()));
+
+        Ok(classes_basic_data)
+    }else{
+        println!("Failed to get data");
+        Err(())
+    }
 }
 
 async fn read_data_struct_file() -> std::result::Result<Value, ()>{
