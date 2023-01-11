@@ -1,0 +1,13 @@
+.downloadbar{
+    position: absolute;
+    bottom: 0%;
+    display:flexbox;
+    justify-content: center;
+    
+    left: 33%;
+    width: 33%;
+    height: 50px;
+
+    background-color: black;
+    color: white;
+}

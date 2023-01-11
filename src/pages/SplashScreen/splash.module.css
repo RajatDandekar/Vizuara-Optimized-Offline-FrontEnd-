@@ -1,0 +1,91 @@
+.SplashScreen{
+    position: fixed;
+    width: 100%;
+    height: 100%;
+
+    max-width: 100%;
+    max-height: 100%;
+
+    margin: 0;
+    padding: 0;
+}
+
+.SplashScreen::-webkit-scrollbar { 
+    display: none;  /* Safari and Chrome */
+  }
+
+.SplashContainer{
+
+    display: block;
+    margin: 0px;
+    padding: 0px;
+    margin-top: -25px;
+    position:fixed;
+
+    width: 100%;
+    height: 100%;
+
+    max-width: 100%;
+    max-height: 100%;
+}
+
+.SplashContainer{
+    z-index: -10;
+}
+
+.SplashTextContainer{
+
+    display:block;
+
+    width: 100%;
+    height: 10%;
+
+    position: fixed;
+    bottom: 20px;
+    display: block;
+    z-index: -5;
+
+    color: white;
+    text-align: center;
+    font-size: 10px;
+}
+
+.SplashVersionContainer{
+
+    display:block;
+
+    width: 100%;
+    height: 10%;
+
+    position: fixed;
+    bottom: 5px;
+    display: block;
+    z-index: -5;
+    font-size: 7px;
+
+    color: white;
+    text-align: center;
+}
+
+.SplashContainer::-webkit-scrollbar { 
+    display: none;  /* Safari and Chrome */
+  }
+
+.Video{
+    width: 100%;
+    height: 100%;
+
+    max-width: 100%;
+    max-height: 100%;
+
+    z-index: -10;
+}
+
+.Video::-webkit-scrollbar { 
+    display: none;  /* Safari and Chrome */
+}
+
+.LoadingText{
+    bottom: 10;
+    z-index:10;
+}

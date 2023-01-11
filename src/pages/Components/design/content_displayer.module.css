@@ -1,0 +1,176 @@
+.content_background{
+    background-color: white;
+    height: calc(100vh - 75px);
+    width: calc(100vw - 50px);
+
+    margin-top: 50px;
+    text-align: center;
+
+    align-items: center;
+    justify-content: center;
+
+    overflow-x: hidden;
+
+    position: absolute;
+}
+
+.header_content{
+    
+    top:0%;
+    position:fixed;
+    display :flex;
+    height: 75px;
+    width: 94%;
+
+    vertical-align: center;
+    align-items: center;
+
+    background-color: rgb(244, 237, 237);
+}
+
+
+.navigation_button{
+    min-width: 100px;
+    max-width: 150px;
+    min-height: 40px;
+    
+    overflow-x: hidden;
+
+    background-color: rgb(236, 236, 236);
+    border:0cm;
+}
+
+.navigation_button:hover{
+    background-color: white;
+}
+
+
+.card{
+    margin-top: 10px;
+    width: 200px;
+    height:200px;
+    float: left;
+    border: 2px solid red;
+
+    border-radius: 10%;
+
+    transition: all 1s;
+
+    display: block;
+
+    justify-content: center;
+    align-items: center;
+}
+
+.card:hover{
+    width: 205px;
+    transition: all 1s;
+    background-color: pink;
+}
+
+.image_container{
+    margin-top: 0px;
+    width: 195px;
+    max-height: 160px;
+    overflow: hidden;
+    transition: all 1s;
+
+    margin-left: -5px;
+    
+    border-radius: 10%;
+    background-color: white;
+
+    opacity: 0.5;
+}
+
+.available{
+    opacity: 1;
+}
+.card:hover > .image_container{
+    width: 200px;
+    transition: all 1s;
+}
+
+
+.ChapterNumber{
+    color: black;
+    position:sticky;
+    bottom: 15%;
+    font-weight: lighter;
+}
+
+.ChapterName{
+    color: black;
+    position:sticky;
+    bottom: 5%;
+}
+
+
+.button_container{
+    margin-top: 5px;
+    overflow: hidden;
+}
+
+
+.button{
+    background-color: white;
+    border: 1px solid black;
+    width: 120%;
+    border: 0;
+    
+    margin-left: -20px;
+    border-radius: 20%;
+}
+.button:hover{
+    background-color: rgb(255, 100, 185);
+    color: white;
+    border: 0;
+    transition: all 0.5s;
+}
+
+
+.interior_button{
+    background-color: rgb(255, 100, 185);
+    border-color: rgb(255, 100, 185);
+    transition: 1s all;
+    color: white;
+
+    border-radius: 10%;
+}
+.interior_button:hover{
+    background-color: white;
+    border-color: rgb(255, 100, 185);
+    transition: 1s all;
+    color: black;
+}
+
+
+.cardspace{
+    float: left;
+    width: 20px;
+    height: 200px;
+}
+
+
+.ContentContainer{
+    margin-top: 50px;
+
+    background-color: white;
+    height: calc(80vh - 75px);
+    width: calc(100vw - 50px);
+    position:flex;
+    padding: 20px;
+
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+
+    overflow-x: hidden;
+}
+
+.iframe_screen{
+    display : block;
+    height  : 70vh;
+    width   : 90vw;
+    border  : none;
+}
