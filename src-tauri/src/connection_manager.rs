@@ -3,9 +3,9 @@ extern crate reqwest;
 
 use std::string::String;
 
-const VERSION_HANDLER: &str = "https://vizuara-optimized-offline.web.app/application/version.html";
-const DATA_VERSION_HANDLER: &str = "https://vizuara-optimized-offline.web.app/application/data_version.html";
-const DATA_STRUCT_CONTROLLER: &str = "https://vizuara-optimized-offline.web.app/application/data_struct_controller.html";
+const VERSION_HANDLER: &str = "https://vizuara-optimized-offline-2.web.app/application/version.html";
+const DATA_VERSION_HANDLER: &str = "https://vizuara-optimized-offline-2.web.app/application/data_version.html";
+const DATA_STRUCT_CONTROLLER: &str = "https://vizuara-optimized-offline-2.web.app/application/data_struct_controller.html";
 
 pub async fn make_connection(connection_path: &str) -> Result<String, String>{
 

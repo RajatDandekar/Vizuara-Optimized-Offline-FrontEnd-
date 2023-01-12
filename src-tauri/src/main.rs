@@ -431,6 +431,7 @@ fn random_string_generator() -> String{
 #[tauri::command]
 async fn download_data_and_extract(window: tauri::Window, data: String, folder: String) -> (){
 
+  if !is_offline_mode(){
   if(get_a_file_is_being_downloaded() == true){
     return
   }
@@ -476,6 +477,7 @@ async fn download_data_and_extract(window: tauri::Window, data: String, folder: 
 
   /*#endregion */
 
+  }
 }
 
 #[tauri::command]
@@ -491,7 +493,10 @@ async fn delete_chapter(window: tauri::Window, folder: String) -> (){
 
 async fn download_file(window: tauri::Window, hyperlink: String, save_path: PathBuf){
   let mut fileToWrite = match std::fs::File::create(save_path){
-    Err(why)=> panic!("{:?}", why),
+    Err(why)=> {
+      exit_after_10_seconds(window.to_owned(), 
+      Event_Messages.MUST_RESTART_APPLICATION().into()).await;
+      panic!("{:?}", why)},
     Ok(file) => file,
   };
 
@@ -506,20 +511,27 @@ async fn download_file(window: tauri::Window, hyperlink: String, save_path: Path
     emit_event(window.to_owned(), &Event_Constants.FILE_START_DOWNLOAD(), "".into());
   }
 
+  let mut chunk_counter = 0;
+
   while let Some(item) = download_stream.next().await {
 
     let chunk = item.or(Err(format!("Error while downloading file"))).unwrap();
+
     fileToWrite.write_all(&chunk)
         .or(Err(format!("Error while writing to file")));
     let new = std::cmp::min(downloaded + (chunk.len() as u64), total_size);
     downloaded = new;
 
-    /*println!("{:?}/{:?}", downloaded, total_size);
-    if get_a_file_is_being_downloaded() {
-      //in main app not in loading screen
-      let download_percentage = downloaded/total_size;
-      emit_event(window.to_owned(), &Event_Constants.FILE_BEING_DOWNLOADED(), "Downloading file : ".to_owned() + &download_percentage.to_string());
-    }*/
+    chunk_counter += 1;
+    if chunk_counter == 50 {
+      println!("{:?}/{:?}", downloaded, total_size);
+      if get_a_file_is_being_downloaded() {
+        //in main app not in loading screen
+        let download_percentage = ((((downloaded as f64/total_size as f64)) as f64) * (100 as f64)) as i32;
+        emit_event(window.to_owned(), &Event_Constants.FILE_BEING_DOWNLOADED(), download_percentage.to_string());
+      }
+      chunk_counter = 0;
+    }
   }
 
   if get_a_file_is_being_downloaded() {
@@ -689,9 +701,9 @@ async fn initialize_application(window: tauri::Window) -> (){
           //need to download the data structure files
           //we will either create or overwrite the existing data struct file
           
-          emit_event(window.to_owned(), &Event_Constants.GET_APPLICATION_VERSION_EVENT(), "Downloading necessary data (5 MB)".into());
+          emit_event(window.to_owned(), &Event_Constants.GET_LOADING_DESCRIPTION_EVENT(), "Downloading necessary data (5 MB)".into());
 
-          download_file(window.to_owned(),"https://vizuaraserver1.ap-south-1.linodeobjects.com/server_launcher.exe".into(), file_manager::get_path_in_vizuara_folder("server_launcher.exe")).await;
+          download_file(window.to_owned(),"https://vizuaraserver.ap-south-1.linodeobjects.com/server_launcher.exe".into(), file_manager::get_path_in_vizuara_folder("server_launcher.exe")).await;
           if !file_manager::does_data_struct_keyfile_exists() {
             //
             if is_first_launch {
@@ -766,7 +778,7 @@ async fn initialize_application(window: tauri::Window) -> (){
 
       set_offline_mode(true);
 
-      prepare_to_launch(window);
+      prepare_to_launch(window).await;
       /*#endregion */
     }
   }
@@ -818,7 +830,7 @@ async fn prepare_to_launch(window: tauri::Window) {
 
 
           emit_event(window.to_owned(), 
-          &Event_Constants.GET_INITIALIZATION_COMPLETED(), 
+          &Event_Constants.GET_LOADING_DESCRIPTION_EVENT(), 
           Event_Messages.LAUNCHING_APPLICATION().into());
 
           println!("Launching Server Application at {:?}", &file_manager::get_server_launcher_file_in_vizuara_folder().to_string_lossy().to_string());
@@ -826,7 +838,7 @@ async fn prepare_to_launch(window: tauri::Window) {
           com.arg(file_manager::get_vizuara_data_path().to_string_lossy().to_string());
 
           println!("Command is {:?}", com);
-          com.output();
+          com.spawn();
 
           println!("Applicaiton is Launching");
           emit_event(window.app_handle().get_window("main").to_owned().unwrap(),&Event_Constants.GET_INITIALIZATION_COMPLETED(), "".into());

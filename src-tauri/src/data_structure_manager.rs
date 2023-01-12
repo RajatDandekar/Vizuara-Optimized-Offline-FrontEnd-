@@ -253,12 +253,13 @@ async fn read_data_struct_file() -> std::result::Result<Value, ()>{
     println!("Reading data struct file from {:?}", file_manager::get_data_struct_keyfile_path());
 
     let read_file_result = file_manager::read_file(file_manager::get_data_struct_keyfile_path());
-    println!("{:?}", read_file_result);
+    println!("{}", &read_file_result);
 
-    let json_parse_result: Result<Value> = serde_json::from_str(read_file_result.as_str());
+    let json_parse_result = serde_json::from_str(read_file_result.as_str());
     if json_parse_result.is_ok(){
         Ok(json_parse_result.unwrap())
     }else{
+        println!("{:?}", json_parse_result.err());
         Err(())
     }
 }

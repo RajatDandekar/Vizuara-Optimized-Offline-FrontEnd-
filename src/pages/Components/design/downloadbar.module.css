@@ -1,13 +1,32 @@
 .downloadbar{
     position: absolute;
     bottom: 0%;
-    display:flexbox;
     justify-content: center;
-    
+    text-align: center;
+
+    background-color: rgb(94, 0, 91);
+
     left: 33%;
     width: 33%;
-    height: 50px;
+    height: 25px;
 
-    background-color: black;
     color: white;
+}
+
+.progressbar{
+
+    margin-left:    10%;
+    margin-top:     7px; 
+
+    display:flexbox;
+    position:static;
+
+    width: 80%;
+    height: 7px;
+
+    background-color: white;
+}
+
+.progress{
+    background-color: orange;
 }

@@ -45,12 +45,24 @@ export class DownloadBar extends React.Component{
         if(this.state.show == true){
             return(
                 <DownloadBarBackground GlobalClassName={downloadbar_styles.downloadbar}>
-                    {this.state.text}
+                    <ProgressBar progress = {this.state.text}></ProgressBar>
                 </DownloadBarBackground>
             );
         }else{
             return
         }
+    }
+}
+
+class ProgressBar extends React.Component{
+    render(){
+        return(
+            <div className={downloadbar_styles.progressbar}>
+                <div style={{width: this.props.progress+"%", height: 5}} className={downloadbar_styles.progress}>
+
+                </div>
+            </div>
+        )
     }
 }
 

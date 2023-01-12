@@ -30,8 +30,8 @@
 
 
 .navigation_button{
-    min-width: 100px;
-    max-width: 150px;
+    min-width: 120px;
+    max-width: 300px;
     min-height: 40px;
     
     overflow-x: hidden;

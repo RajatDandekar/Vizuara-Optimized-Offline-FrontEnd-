@@ -91,6 +91,10 @@ impl Event_Messages{
         "Exception:549. DELETING ALL DATA TO ENSURE DATA INTEGRITY"
     }
 
+    pub const fn MUST_RESTART_APPLICATION(&self) -> &str{
+        "NOTICE: MUST RESTART THE COMPUTER TO CONTINUE WITH THE UPDATING PROCESS"
+    }
+
     pub const fn LAUNCHING_APPLICATION(&self) -> &str{
         "Launching Vizuara: Teacher's Portal"
     }
