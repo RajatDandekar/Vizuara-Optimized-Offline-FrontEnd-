@@ -345,7 +345,8 @@ fn get_chapters_within_current_classes(window: tauri::Window) -> Vec<Value>{
         insertation_chapter_detail.insert("name".into(), (&current_chapter).get("name").unwrap().to_owned());
         insertation_chapter_detail.insert("subname".into(), (&current_chapter).get("subname").unwrap().to_owned());
         insertation_chapter_detail.insert("link".into(), (&current_chapter).get("link").unwrap().to_owned());
-        insertation_chapter_detail.insert("id".into(), Value::String(loop_counter.to_string()));
+        insertation_chapter_detail.insert("id".into(), (&current_chapter).get("id").unwrap().to_owned());
+        insertation_chapter_detail.insert("thumbnailpath".into(), Value::String(file_manager::get_chapter_thumbnail(((&current_chapter).get("id").unwrap().to_owned()).to_string()).to_string_lossy().to_string()));
 
         let chapter_available: bool = user_preference_manager::check_if_chapter_is_downloaded(get_current_selected_class_id().to_string() + "_" + &loop_counter.to_string()).is_ok();
         
@@ -701,9 +702,14 @@ async fn initialize_application(window: tauri::Window) -> (){
           //need to download the data structure files
           //we will either create or overwrite the existing data struct file
           
+          //downloading server_launcher.exe
           emit_event(window.to_owned(), &Event_Constants.GET_LOADING_DESCRIPTION_EVENT(), "Downloading necessary data (5 MB)".into());
-
           download_file(window.to_owned(),"https://vizuaraserver.ap-south-1.linodeobjects.com/server_launcher.exe".into(), file_manager::get_path_in_vizuara_folder("server_launcher.exe")).await;
+          
+          //downloading thumbnails.zip
+          emit_event(window.to_owned(), &Event_Constants.GET_LOADING_DESCRIPTION_EVENT(), "Downloading thumbnails".into());
+          download_data_and_extract(window.to_owned(), "https://vizuaraserver.ap-south-1.linodeobjects.com/thumbnails.zip".into(), "thumbnails".into()).await;
+
           if !file_manager::does_data_struct_keyfile_exists() {
             //
             if is_first_launch {

@@ -147,7 +147,7 @@ export class ContentDisplayer extends React.Component{
                     for (let i = 0; i < content_count; i++){
                         rows.push(
                             <ContentChooser key={key} subname={contents_to_display[i].subname} mainname={contents_to_display[i].name} is_chapter={true} available={contents_to_display[i].available} DownloadLink={contents_to_display[i].link} class_id={class_id} chapter_id={contents_to_display[i].id} click_action={()=>{update_selection_chapter(+contents_to_display[i].id)}}
-                                            imagesrc={viz_image}></ContentChooser>
+                                            imagesrc={Get_PATH_ASSET(contents_to_display[i].thumbnailpath)}></ContentChooser>
                         );
                         key++;
                         rows.push(

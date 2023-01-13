@@ -203,9 +203,16 @@ pub fn get_chapters_thumbnails_folder() -> PathBuf{
 //get thumbnail of chapters
 //</summary>
 pub fn get_chapter_thumbnail(thumbnail_id: String) -> PathBuf{
-    let chapter_thumbnails_directory: PathBuf = get_chapters_thumbnails_folder();
-    let chapter_thumbnail_path = Path::new(&chapter_thumbnails_directory).join(thumbnail_id + ".jpg");
-    PathBuf::from(chapter_thumbnail_path)
+    let chapters_thumbnail_directory: PathBuf = get_chapters_thumbnails_folder();
+
+    let mut temp_thumbnail_id = (&thumbnail_id).to_owned();
+    temp_thumbnail_id.push_str(".png".into());
+    let str_thumbnail_id: &str = temp_thumbnail_id.as_str();
+    let new_path:String = (&str_thumbnail_id.replace("\"", "")).replace("\\", "/");
+
+    let chapter_thumbail_path = Path::new(&chapters_thumbnail_directory).join(new_path);
+    println!("file path is {:?}",&chapter_thumbail_path);
+    PathBuf::from(chapter_thumbail_path)
 }
 
 /*#region Get File, Check if Exists, Create Folder, Create File, Append etc */

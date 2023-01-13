@@ -234,6 +234,7 @@ pub fn insert_chapters_to_variable(class_id: String) -> std::result::Result<Map<
                     insertation_chapter_detail.insert("name".into(), (&chapter_detail).get("N").unwrap().to_owned());
                     insertation_chapter_detail.insert("subname".into(), (&chapter_detail).get("P").unwrap().to_owned());
                     insertation_chapter_detail.insert("link".into(), (&chapter_detail).get("L").unwrap().to_owned());
+                    insertation_chapter_detail.insert("id".into(), (&chapter_detail).get("I").unwrap().to_owned());
 
                     insert_to_static_chapters_struct((&chapter_detail).get("I").unwrap().as_str().unwrap().into(), Value::Object(insertation_chapter_detail));
                     println!("{:?}",(&chapter_detail).get("I").unwrap().as_str().unwrap());
