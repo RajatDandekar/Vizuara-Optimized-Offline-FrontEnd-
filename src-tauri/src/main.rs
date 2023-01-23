@@ -335,7 +335,7 @@ fn get_chapters_within_current_classes(window: tauri::Window) -> Vec<Value>{
   
   let mut data_to_return: Vec<Value> = Vec::new();
   loop{
-     let get_chapter_result = data_structure_manager::find_in_static_chapters_struct_with_chapter_id(loop_counter.to_string());
+     let get_chapter_result = data_structure_manager::find_in_static_chapters_struct_with_chapter_index(loop_counter.to_string());
      
      if get_chapter_result.is_ok() {
         let current_chapter = get_chapter_result.unwrap();
@@ -348,7 +348,13 @@ fn get_chapters_within_current_classes(window: tauri::Window) -> Vec<Value>{
         insertation_chapter_detail.insert("id".into(), (&current_chapter).get("id").unwrap().to_owned());
         insertation_chapter_detail.insert("thumbnailpath".into(), Value::String(file_manager::get_chapter_thumbnail(((&current_chapter).get("id").unwrap().to_owned()).to_string()).to_string_lossy().to_string()));
 
-        let chapter_available: bool = user_preference_manager::check_if_chapter_is_downloaded(get_current_selected_class_id().to_string() + "_" + &loop_counter.to_string()).is_ok();
+        let mut chapter_folder_id = get_current_selected_class_id().to_string();
+        chapter_folder_id.push_str("_");
+        chapter_folder_id.push_str(&(&current_chapter).get("id").unwrap().to_owned().to_string());
+        chapter_folder_id = chapter_folder_id.replace("\"", "");
+
+        println!("Chapter folder id {:?}", chapter_folder_id);
+        let chapter_available: bool = user_preference_manager::check_if_chapter_is_downloaded(chapter_folder_id).is_ok();
         
         insertation_chapter_detail.insert("available".into(), Value::Bool(chapter_available));
 

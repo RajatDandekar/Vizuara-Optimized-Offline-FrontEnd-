@@ -73,9 +73,39 @@ pub fn insert_to_static_chapters_struct(chapter_id: &str, chapter_details: Value
     drop(global_chapters_struct);
 }
 
+pub fn find_in_static_chapters_struct_with_chapter_index(chapter_index: String)-> std::result::Result<Map<String, Value>,()>{
+    let binding = (*CHAPTERS_STRUCT).read().unwrap();
+
+    let chapter = binding.get(&chapter_index.to_owned().to_string());
+    if (&chapter).is_some() {
+        //no error
+        Ok(chapter.unwrap().as_object().to_owned().unwrap().to_owned())
+    }else{
+        Err(())
+    }
+}
+
 pub fn find_in_static_chapters_struct_with_chapter_id(chapter_id: String)-> std::result::Result<Map<String, Value>,()>{
     let binding = (*CHAPTERS_STRUCT).read().unwrap();
-    let chapter = binding.get(&chapter_id.to_owned().to_string());
+    let mut chapter: Option<&Value> = None;
+
+    let mut loop_counter = 1;
+    loop{
+
+        chapter = binding.get(&(&loop_counter).to_owned().to_string());
+
+        if chapter.is_some() {
+            //println!("{} {}", chapter_id, chapter.unwrap().get("id").unwrap().to_string().replace);
+            if chapter_id == chapter.unwrap().get("id").unwrap().to_string().replace("\"", "") {
+                break;
+            }else{
+                chapter = None;
+            }
+        }else{
+            break;
+        }
+        loop_counter = loop_counter + 1;
+    }
     if (&chapter).is_some() {
         //no error
         Ok(chapter.unwrap().as_object().to_owned().unwrap().to_owned())
