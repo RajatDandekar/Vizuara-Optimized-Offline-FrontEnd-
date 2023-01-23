@@ -212,6 +212,7 @@ pub fn insert_chapters_to_variable(class_id: String) -> std::result::Result<Map<
     let get_key_result = get_key(class_id);
     if get_key_result.is_ok() {
         let classes = get_key_result.ok().unwrap();
+        println!("{:?}", (&classes).to_owned());
 
         let available_chapters: Map<String,Value> = classes.get("C").unwrap().to_owned().as_object().unwrap().to_owned();
         //println!("{:?}",available_chapters);
@@ -231,12 +232,14 @@ pub fn insert_chapters_to_variable(class_id: String) -> std::result::Result<Map<
 
                     let mut insertation_chapter_detail : Map<String, Value> = Map::new();
                     
+                    //println!("{:?}", (&chapter_detail).to_owned());
+
                     insertation_chapter_detail.insert("name".into(), (&chapter_detail).get("N").unwrap().to_owned());
                     insertation_chapter_detail.insert("subname".into(), (&chapter_detail).get("P").unwrap().to_owned());
                     insertation_chapter_detail.insert("link".into(), (&chapter_detail).get("L").unwrap().to_owned());
                     insertation_chapter_detail.insert("id".into(), (&chapter_detail).get("I").unwrap().to_owned());
 
-                    insert_to_static_chapters_struct((&chapter_detail).get("I").unwrap().as_str().unwrap().into(), Value::Object(insertation_chapter_detail));
+                    insert_to_static_chapters_struct(&(&loop_counter).to_owned().to_string(), Value::Object(insertation_chapter_detail));
                     println!("{:?}",(&chapter_detail).get("I").unwrap().as_str().unwrap());
                 }
             }
