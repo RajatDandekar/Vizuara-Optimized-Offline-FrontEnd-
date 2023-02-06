@@ -269,6 +269,13 @@ pub fn insert_chapters_to_variable(class_id: String) -> std::result::Result<Map<
                     insertation_chapter_detail.insert("link".into(), (&chapter_detail).get("L").unwrap().to_owned());
                     insertation_chapter_detail.insert("id".into(), (&chapter_detail).get("I").unwrap().to_owned());
 
+                    let chapter_version_info_result = (&chapter_detail).get("V");
+                    if chapter_version_info_result.is_some() {
+                        insertation_chapter_detail.insert("version".into(), (&chapter_detail).get("V").unwrap().to_owned());    
+                    }else{
+                        insertation_chapter_detail.insert("version".into(), "".into());    
+                    }
+
                     insert_to_static_chapters_struct(&(&loop_counter).to_owned().to_string(), Value::Object(insertation_chapter_detail));
                     println!("{:?}",(&chapter_detail).get("I").unwrap().as_str().unwrap());
                 }

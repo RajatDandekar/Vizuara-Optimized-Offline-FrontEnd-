@@ -23,6 +23,7 @@ dependencies = [
  "tauri-build",
  "tokio",
  "webbrowser",
+ "winreg",
  "zip",
  "zip-extensions",
 ]

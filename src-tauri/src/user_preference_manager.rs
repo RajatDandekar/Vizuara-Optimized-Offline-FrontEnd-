@@ -143,10 +143,16 @@ lazy_static!{
         save_from_variable_to_keyfile()
     }
 
-    pub fn add_new_downloaded_chapter(new_chapter_id: String) -> std::result::Result<(),()>{
+    pub fn add_new_downloaded_chapter(new_chapter_id: String, new_chapter_version: String) -> std::result::Result<(),()>{
 
         let mut downloaded_chapter_data: Vec<String> = get_downloaded_chapters_data();
-        downloaded_chapter_data.insert(0, new_chapter_id);
+        
+        if new_chapter_version.len() > 0 {
+            downloaded_chapter_data.insert(0, new_chapter_id+"."+&new_chapter_version);
+        }
+        else{
+            downloaded_chapter_data.insert(0, new_chapter_id);
+        }
 
         let mut global_user_preference_pointer = USER_PREFERENCE_DATA.write().unwrap();
         (*global_user_preference_pointer).downloaded_chapters = Some(downloaded_chapter_data);
@@ -186,7 +192,32 @@ lazy_static!{
         if downloaded_chapters_option.is_some(){
             let downloaded_chapters: Vec<String> = downloaded_chapters_option.as_ref().unwrap().to_owned();
             
-            let index = downloaded_chapters.iter().position(|element| element.to_owned() == chapter_id);
+            let chapt : String = "".into();
+
+            fn get_chapterid_from_element(chapters_in_question: String) -> String{
+                if(chapters_in_question.contains('.')) {
+                    let mut loop_counter = 0;
+                    let mut string_to_return: String = "".into();
+
+                    for codes in chapters_in_question.split(".") {
+                        if(loop_counter == 0){
+                            string_to_return = codes.to_owned().into();
+                        }
+                        loop_counter += 1;
+                    }
+                    string_to_return
+                }else{
+                    chapters_in_question
+                }
+            }
+
+
+            let index = downloaded_chapters.iter().position(|element|  
+                
+
+                get_chapterid_from_element(element.to_owned()) == chapter_id
+            
+            );
             if(index.is_some()){
                 Ok(index.unwrap())
             }else{
@@ -195,6 +226,34 @@ lazy_static!{
         }else{
             Err(())
         }
+    }
+
+    pub fn check_chapter_version(chapter_id: String) -> String{
+        let mut downloaded_chapter_data: Vec<String> = get_downloaded_chapters_data();
+        
+        let is_chapter_downloaded: std::result::Result<usize, ()> = check_if_chapter_is_downloaded(chapter_id);
+        if is_chapter_downloaded.is_ok() {
+
+            let index_to_check = is_chapter_downloaded.unwrap();
+
+            let chapters_in_question = downloaded_chapter_data.get(index_to_check).unwrap().to_owned();
+            if chapters_in_question.contains('.') {
+                let mut loop_counter = 0;
+                let mut string_to_return : String = "".into();
+
+                for codes in chapters_in_question.split(".") {
+                    if(loop_counter == 1){
+                        string_to_return = codes.to_owned().into();
+                    }
+                    loop_counter += 1;
+                }
+                string_to_return
+            }else{
+                "".into()
+            }
+        }else {
+            "".into()
+        }    
     }
 
     fn get_downloaded_chapters_data() -> Vec<String>{

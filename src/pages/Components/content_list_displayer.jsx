@@ -147,7 +147,7 @@ export class ContentDisplayer extends React.Component{
                     for (let i = 0; i < content_count; i++){
                         rows.push(
                             <ContentChooser key={key} subname={contents_to_display[i].subname} mainname={contents_to_display[i].name} is_chapter={true} available={contents_to_display[i].available} DownloadLink={contents_to_display[i].link} class_id={class_id} chapter_id={contents_to_display[i].id} click_action={()=>{update_selection_chapter(+contents_to_display[i].id)}}
-                                            imagesrc={Get_PATH_ASSET(contents_to_display[i].thumbnailpath)}></ContentChooser>
+                                            imagesrc={Get_PATH_ASSET(contents_to_display[i].thumbnailpath)} version={contents_to_display[i].version} shouldupdate={contents_to_display[i].shouldupdate}></ContentChooser>
                         );
                         key++;
                         rows.push(
@@ -349,10 +349,11 @@ class ContentChooser extends React.Component{
         var download_button_visibility = this.props.available? "hidden": "visible";
         var delete_button_visibility = this.props.available? "visible": "hidden";
 
-        function display_downloadbutton_or_deletebutton(available, is_chapter, class_id, chapter_id, download_link){
+        function display_downloadbutton_or_deletebutton(available, is_chapter, class_id, chapter_id, download_link, version_code, shouldupdate){
             
             if(is_chapter){
                 if(available){
+                    if(!shouldupdate) {
                     return (
                         <div className={content_style.interior_button} onClick={async (e)=>{
                             e.stopPropagation();
@@ -360,12 +361,24 @@ class ContentChooser extends React.Component{
                             await invoke("delete_chapter", {folder: class_id + "_" + chapter_id});
                         }}>Delete</div>
                     )
+                 }else{
+                    return(
+                    <div className={content_style.interior_button} onClick={async (e)=>{
+                        e.stopPropagation();
+                        await invoke("download_data_and_extract", {data : download_link, folder: class_id + "_" + chapter_id, version: version_code });
+                    }}>
+                        Update
+                    </div>
+                    )
+                 }
                 }else{
                     return(
                         <div className={content_style.interior_button} onClick={async (e)=>{
                             e.stopPropagation();
-                            await invoke("download_data_and_extract", {data : download_link, folder: class_id + "_" + chapter_id});
-                        }}>Download</div>
+                            await invoke("download_data_and_extract", {data : download_link, folder: class_id + "_" + chapter_id, version: version_code });
+                        }}>
+                            Download
+                        </div>
                     )
                 }
             }
@@ -391,7 +404,7 @@ class ContentChooser extends React.Component{
                     <div>
                         <div className={content_style.button_container}>
                             {
-                                display_downloadbutton_or_deletebutton(this.props.available, this.props.is_chapter, this.props.class_id, this.props.chapter_id, this.props.DownloadLink)
+                                display_downloadbutton_or_deletebutton(this.props.available, this.props.is_chapter, this.props.class_id, this.props.chapter_id, this.props.DownloadLink, this.props.version, this.props.shouldupdate)
                             }
                         </div>
                     </div>

@@ -98,4 +98,8 @@ impl Event_Messages{
     pub const fn LAUNCHING_APPLICATION(&self) -> &str{
         "Launching Vizuara: Teacher's Portal"
     }
+
+    pub const fn PRODUCT_KEY_ERROR(&self) -> &str{
+        "Product key error! Please reinstall using the installer"
+    }
 }

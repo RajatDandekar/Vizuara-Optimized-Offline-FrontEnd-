@@ -6,6 +6,8 @@
 #[macro_use] 
 extern crate magic_crypt;
 
+extern crate winreg;
+
 /*#region importing necessities */
 
 use file_manager::get_path_in_vizuara_folder;
@@ -16,10 +18,14 @@ use tauri::Manager;
 use user_preference_manager::remove_downloaded_chapter;
 
 use std::fmt::format;
+use std::os::windows::process::CommandExt;
 use std::path::{PathBuf, Path};
 use std::vec;
 use std::io::{Cursor, Write, BufReader};
 use std::sync::RwLock;
+
+use winreg::enums::*;
+use winreg::RegKey;
 
 use zip_extensions::*;
 use lazy_static::lazy_static;
@@ -354,9 +360,19 @@ fn get_chapters_within_current_classes(window: tauri::Window) -> Vec<Value>{
         chapter_folder_id = chapter_folder_id.replace("\"", "");
 
         println!("Chapter folder id {:?}", chapter_folder_id);
-        let chapter_available: bool = user_preference_manager::check_if_chapter_is_downloaded(chapter_folder_id).is_ok();
+        let chapter_available: bool = user_preference_manager::check_if_chapter_is_downloaded((&chapter_folder_id).to_owned()).is_ok();
         
-        insertation_chapter_detail.insert("available".into(), Value::Bool(chapter_available));
+        insertation_chapter_detail.insert("available".into(), Value::Bool((&chapter_available).to_owned()));
+        insertation_chapter_detail.insert("version".into(), (&current_chapter).get("version").unwrap().to_owned());
+        if user_preference_manager::check_chapter_version((&chapter_folder_id).to_owned()).to_owned() != (&current_chapter).get("version").unwrap().to_owned() {
+          if chapter_available {
+            insertation_chapter_detail.insert("shouldupdate".into(), Value::Bool(true));
+          }else{
+            insertation_chapter_detail.insert("shouldupdate".into(), Value::Bool(false));
+          }
+        }else{
+          insertation_chapter_detail.insert("shouldupdate".into(), Value::Bool(false));
+        }
 
         data_to_return.push(Value::Object(insertation_chapter_detail));
      }else{
@@ -436,7 +452,7 @@ fn random_string_generator() -> String{
 }
 
 #[tauri::command]
-async fn download_data_and_extract(window: tauri::Window, data: String, folder: String) -> (){
+async fn download_data_and_extract(window: tauri::Window, data: String, folder: String, version: String) -> (){
 
   if !is_offline_mode(){
   if(get_a_file_is_being_downloaded() == true){
@@ -474,7 +490,8 @@ async fn download_data_and_extract(window: tauri::Window, data: String, folder: 
   }
 
   extract_zip_file(file_manager::get_path_in_vizuara_folder(&(random_string + ".zip")), file_manager::get_path_in_vizuara_folder(&folder)).await;
-  user_preference_manager::add_new_downloaded_chapter((&folder).to_owned());
+
+  user_preference_manager::add_new_downloaded_chapter((&folder).to_owned(), (&version).to_owned());
 
   set_a_file_is_being_downloaded(false);
   
@@ -714,7 +731,7 @@ async fn initialize_application(window: tauri::Window) -> (){
           
           //downloading thumbnails.zip
           emit_event(window.to_owned(), &Event_Constants.GET_LOADING_DESCRIPTION_EVENT(), "Downloading thumbnails".into());
-          download_data_and_extract(window.to_owned(), "https://vizuaraserver.ap-south-1.linodeobjects.com/thumbnails.zip".into(), "thumbnails".into()).await;
+          download_data_and_extract(window.to_owned(), "https://vizuaraserver.ap-south-1.linodeobjects.com/thumbnails.zip".into(), "thumbnails".into(), "".into()).await;
 
           if !file_manager::does_data_struct_keyfile_exists() {
             //
@@ -819,6 +836,42 @@ async fn update_and_start(window: tauri:: Window, server_data_version: String){
 
 }
 
+fn check_serial_number()-> Result<(),()>{
+      //get the command line result
+    let output_result  = Command::new("wmic")
+                                .arg("bios")
+                                .arg("get")
+                                .arg("serialnumber")
+                                .output().expect("Something happened!?");
+    let commandline_output_result = String::from_utf8_lossy(&output_result.stdout).to_string();
+    
+    //and read the line 1
+    let mut serialnumber: String = "".into();
+    let mut count = 0;
+    for line in commandline_output_result.lines() {
+        if count == 1 {
+            serialnumber = line.into();
+            println!("{}", line);
+        }
+        count += 1;
+    }
+
+    let hklm = RegKey::predef(HKEY_CURRENT_USER);
+    let path = Path::new("Software").join("Vizuara");
+    let (key, _disp) = hklm.create_subkey(&path).unwrap();
+    let value: Result<String, std::io::Error> = key.get_value("ID");
+
+    if value.is_ok() {
+      if value.unwrap() == serialnumber {
+        Ok(())
+      }else{
+        Err(())
+      }
+    }else{
+      Err(())
+    }
+}
+
 async fn prepare_to_launch(window: tauri::Window) {
 
   //data_struct file has been successfully downloaded onto the user's machine! Good job!
@@ -840,20 +893,30 @@ async fn prepare_to_launch(window: tauri::Window) {
 
           sleep_for_a_second().await;
 
+          if check_serial_number().is_ok() { 
+            emit_event(window.to_owned(), 
+            &Event_Constants.GET_LOADING_DESCRIPTION_EVENT(), 
+            Event_Messages.LAUNCHING_APPLICATION().into());
 
-          emit_event(window.to_owned(), 
-          &Event_Constants.GET_LOADING_DESCRIPTION_EVENT(), 
-          Event_Messages.LAUNCHING_APPLICATION().into());
+            println!("Launching Server Application at {:?}", &file_manager::get_server_launcher_file_in_vizuara_folder().to_string_lossy().to_string());
+            let mut com: Command = Command::new(file_manager::get_server_launcher_file_in_vizuara_folder().to_string_lossy().to_string().replace("\\", "/"));
+            com.arg(file_manager::get_vizuara_data_path().to_string_lossy().to_string());
+            com.creation_flags(0x08000000);
 
-          println!("Launching Server Application at {:?}", &file_manager::get_server_launcher_file_in_vizuara_folder().to_string_lossy().to_string());
-          let mut com: Command = Command::new(file_manager::get_server_launcher_file_in_vizuara_folder().to_string_lossy().to_string().replace("\\", "/"));
-          com.arg(file_manager::get_vizuara_data_path().to_string_lossy().to_string());
+            println!("Command is {:?}", com);
+            com.spawn();
 
-          println!("Command is {:?}", com);
-          com.spawn();
+            println!("Application is Launching");
+            emit_event(window.app_handle().get_window("main").to_owned().unwrap(),&Event_Constants.GET_INITIALIZATION_COMPLETED(), "".into());
+          }
+          /*#region Serial Number not the same */
+          else{
+              file_manager::delete_vizuara_directory_and_recreate();
 
-          println!("Applicaiton is Launching");
-          emit_event(window.app_handle().get_window("main").to_owned().unwrap(),&Event_Constants.GET_INITIALIZATION_COMPLETED(), "".into());
+              exit_after_10_seconds(window.to_owned(), 
+               Event_Messages.PRODUCT_KEY_ERROR().into()).await;
+          }
+          /*#endregion */
 
           //Launch the application!
           //println!("Launch the application!")
