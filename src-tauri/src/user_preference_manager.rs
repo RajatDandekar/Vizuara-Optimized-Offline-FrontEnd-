@@ -102,12 +102,11 @@ lazy_static!{
 
         //println!("Getting User Preference Data");
 
-        let read_file_result : std::result::Result<String, String> = file_manager::read_file_with_decryption(keyfile_pathbuf());
+        let read_file_result : String = file_manager::read_file(keyfile_pathbuf());
 
-        if read_file_result.is_ok() {
-        let json_parsing_result : Result<UserPreferences> = serde_json::from_str(&read_file_result.unwrap());
+        let json_parsing_result : Result<UserPreferences> = serde_json::from_str(&read_file_result);
         
-        if json_parsing_result.is_ok() {
+            if json_parsing_result.is_ok() {
             //executed successfully!
             let mut global_user_preference_pointer = USER_PREFERENCE_DATA.write().unwrap();
             *global_user_preference_pointer = json_parsing_result.unwrap();
@@ -115,10 +114,7 @@ lazy_static!{
             }else{
                 Err(())
             }
-        }else{
-            println!("{:?}", read_file_result.err().unwrap());
-            Err(())
-        }
+
         //let version_data: String = up.version.as_ref().unwrap().to_owned();
         //set_user_pref(Lazy::new(||UserPreferences{version:Some(String::from(version_data))}));
     }
@@ -270,7 +266,7 @@ lazy_static!{
         //let upd_temp = &*USER_PREFERENCE_DATA.read().expect("something went wrong");
         //println!("After getting");
 
-        file_manager::create_file_with_encryption(keyfile_pathbuf(), serde_json::to_string(&*USER_PREFERENCE_DATA.read().unwrap()).unwrap());
+        file_manager::create_file(keyfile_pathbuf(), serde_json::to_string(&*USER_PREFERENCE_DATA.read().unwrap()).unwrap());
         Ok(())
     }
 /*#endregion */
