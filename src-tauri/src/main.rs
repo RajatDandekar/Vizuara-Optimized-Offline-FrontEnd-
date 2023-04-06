@@ -836,8 +836,12 @@ async fn update_and_start(window: tauri:: Window, server_data_version: String){
 
 }
 
+///<summary>
+/// Function dropped
+///</summary>
 fn check_serial_number()-> Result<(),()>{
       //get the command line result
+      /*
     let output_result  = Command::new("wmic")
                                 .arg("bios")
                                 .arg("get")
@@ -869,7 +873,8 @@ fn check_serial_number()-> Result<(),()>{
       }
     }else{
       Err(())
-    }
+    }*/
+    Ok(())
 }
 
 async fn prepare_to_launch(window: tauri::Window) {
