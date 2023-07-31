@@ -5,8 +5,10 @@
 
 #[macro_use] 
 extern crate magic_crypt;
-
 extern crate winreg;
+extern crate win_msgbox;
+extern crate chrono;
+
 
 /*#region importing necessities */
 
@@ -16,6 +18,11 @@ use reqwest::Url;
 use futures_util::{StreamExt, FutureExt};
 use tauri::Manager;
 use user_preference_manager::remove_downloaded_chapter;
+use magic_crypt::{new_magic_crypt, MagicCryptTrait};
+use chrono::NaiveDate;
+use win_msgbox::Okay;
+use windows_sys::{w};
+
 
 use std::fmt::format;
 use std::os::windows::process::CommandExt;
@@ -23,6 +30,8 @@ use std::path::{PathBuf, Path};
 use std::vec;
 use std::io::{Cursor, Write, BufReader};
 use std::sync::RwLock;
+use std::fs::File;
+use std::io::{self, BufRead};
 
 use winreg::enums::*;
 use winreg::RegKey;
@@ -943,7 +952,67 @@ async fn prepare_to_launch(window: tauri::Window) {
 /*#endregion */
 
 
-fn main() {
+fn check_for_license() -> bool {
+        
+  let licence_data: File= File::open("licence.lic").unwrap();
+  let lines: Vec<String> = io::BufReader::new(licence_data)
+             .lines()
+             .map(|line|line.expect("Could not read line"))
+             .collect();
+  
+  let mcrypt = new_magic_crypt!("magickey", 256); //Creates an instance of the magic crypt library/crate.
+  let installation_date  = mcrypt.decrypt_base64_to_string(lines[0].to_string()).unwrap(); //Decrypts the string so we can read it.
+
+  let expiry_date  = mcrypt.decrypt_base64_to_string(lines[1].to_string()).unwrap(); //Decrypts the string so we can read it.
+
+  let _install_date_as_date = NaiveDate::parse_from_str(&installation_date, "%Y-%m-%d").unwrap();
+  let _expiry_date_as_date = NaiveDate::parse_from_str(&expiry_date, "%Y-%m-%d").unwrap();
+
+ let remaining_days = (_expiry_date_as_date - _install_date_as_date).num_days();
+ 
+ if remaining_days < 0
+ {
+     return  false;
+ }
+ else {
+     return  true;
+ }
+
+}
+
+
+fn does_licence_file_exist() -> bool
+{
+  let mut valid_licence_file = Path::new("licence.lic").exists();
+  return  valid_licence_file;
+}
+
+fn main() 
+{
+  let mut is_valid_licence = true;
+  
+  is_valid_licence = does_licence_file_exist();
+
+  if is_valid_licence == false
+  {
+    let _ = win_msgbox::information::<Okay>(w!("No licence file found"))
+        .title(w!("Vizura"))
+        .show();
+      std::process::exit(is_valid_licence as i32);
+  }
+  else 
+  {
+    is_valid_licence =  check_for_license();
+
+    if is_valid_licence == false
+    {
+      let _ = win_msgbox::information::<Okay>(w!("Licence has expired"))
+      .title(w!("Vizura"))
+      .show();
+       std::process::exit(is_valid_licence as i32);
+
+    }
+  }
 
     tauri::Builder::default().setup(|app|{
         let splashscreen_window = app.get_window("splashscreen").unwrap();
